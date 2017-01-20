@@ -1,0 +1,14 @@
+/* TRUCO */
+.player {
+    position: absolute;
+    left:50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+}
+.player .player-icon{
+    width: 0px;
+    height:0px;
+    border-left: 50px solid transparent;
+    border-right: 50px solid transparent;
+    border-bottom: 50px solid red;
+}
