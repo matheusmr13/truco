@@ -14,6 +14,16 @@ var eventsSet = false;
 var cardTypes = ['1','2','3','4','5','6','7','Q','J','K'];
 var suite = ['C','H','S','D'];
 
+var keys = {
+    '81': 'C',
+    '87': 'H',
+    '69': 'S',
+    '82': 'D',
+    '65': '3',
+    '83': '2',
+    '68': '1',
+}
+
 Truco.prototype = {
     init: function() {
         var that = this;
@@ -65,15 +75,29 @@ Truco.prototype = {
                         angle = angle + 360;
                     }
                     document.getElementById(myName).getElementsByClassName('player-icon')[0].style.transform = 'rotate(' + angle + 'deg)';
-
                     that.socket.emit('move', JSON.stringify({angle: angle}));
                 }, false);
-                that.socket.on('move', function(user, msg, color) {
+                that.socket.on('move', function(user, msg) {
                     msg = JSON.parse(msg);
-                    console.info(user);
-                    console.info(msg);
                     document.getElementById(user).getElementsByClassName('player-icon')[0].style.transform = 'rotate(' + msg.angle + 'deg)';
                 });
+
+                window.onkeydown = function(evt) {
+                    evt = evt || window.event;
+                    
+                    that.socket.emit('signal-sending', keys[evt.keyCode]);
+                };
+
+                window.onkeyup = function(evt) {
+                    evt = evt || window.event;
+                    that.socket.emit('signal-ending', keys[evt.keyCode]);
+                };
+
+                that.socket.on('signal-update', function(user, msg) {
+                    msg = JSON.parse(msg);
+                    document.getElementById(user).getElementsByClassName('player-icon')[0].style.transform = 'rotate(' + msg.angle + 'deg)';
+                });
+
                 eventsSet = true;
             }
         });
@@ -99,6 +123,9 @@ Truco.prototype = {
     getCard : function(cardType, suite) {
         return '<div class="card-img"><img src="/imgs/cards.png" style="left: -' + (cardType * 73) + 'px; top: -' + (suite * 98) + 'px;"></div>';
     },
+    getSignal : function(signal) {
+        return '<div class="signal"></div>';
+    },
     getPlayer : function(id, team, i) {
         var config = {
             '1': [{
@@ -118,8 +145,9 @@ Truco.prototype = {
         }[team][Math.floor(i / 2)];
         console.info(id, team, i);
         return '<div id="'+id+'" class="player" style="'+config.position+';">'+
-                    '<div class="player-icon" style="border-bottom: 50px solid '+config.color+';"></div>'+
+                    '<div class="player-icon" style="border-bottom: 50px solid '+config.color+';"><div class="vision"></div></div>'+
                     '<div class="player-name">'+id+'</div>'+
+                    '<div class="player-signals"></div>'+
                     '<div class="player-cards">'+
                         '<img src="/imgs/card-back.jpg">'+
                         '<img src="/imgs/card-back.jpg">'+

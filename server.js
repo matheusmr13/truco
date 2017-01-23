@@ -22,7 +22,7 @@ var setupMatch = function(socket) {
         team: 2,
         order: 0
     };
-    
+
     matches[socket.matchCode] = match;
 };
 
@@ -136,9 +136,35 @@ io.sockets.on('connection', function(socket) {
     socket.on('move', function(msg) {
         var match = matches[socket.matchCode];
         if (match) {
+            match.users[socket.username].angle = msg.angle;
             for (let user in match.users) {
                 if (user != socket.username) {
                     match.users[user].socket.emit('move', socket.username, msg);
+                }
+            }
+        }
+    });
+    socket.on('signal-sending', function(msg) {
+        var match = matches[socket.matchCode];
+        if (match) {
+            match.users[socket.username].signal.push(msg);
+            for (let user in match.users) {
+                if (user != socket.username) {
+                    //check if it is on range
+                    match.users[user].socket.emit('signal-update', socket.username, JSON.stringify(match.users[socket.username].signal));
+                }
+            }
+        }
+    });
+    socket.on('signal-ending', function(msg) {
+        var match = matches[socket.matchCode];
+        if (match) {
+            var signals = match.users[socket.username].signal;
+            signals.splice(signals.indexOf(msg),1);
+            for (let user in match.users) {
+                if (user != socket.username) {
+                    //check if it is on range
+                    match.users[user].socket.emit('signal-update', socket.username, JSON.stringify(signals));
                 }
             }
         }
