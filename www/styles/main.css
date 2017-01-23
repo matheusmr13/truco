@@ -4,11 +4,62 @@
     left:50%;
     top: 50%;
     transform: translate(-50%,-50%);
+    border: 1px solid black;
+    border-radius: 10px;
+    text-align: center;
 }
 .player .player-icon{
     width: 0px;
     height:0px;
     border-left: 50px solid transparent;
     border-right: 50px solid transparent;
-    border-bottom: 50px solid red;
+    border-bottom: 50px solid transparent;
+    display: inline-block;
+    margin: 40px;
+}
+
+.player-cards > img {
+  width: 73px;
+    height: 98px;
+}
+
+.me .player-cards:hover > img {
+    display: none;
+}
+.me .player-cards .hand {
+    display: none;
+}
+.me .player-cards:hover .hand {
+    display: block;
+}
+
+.card-img {
+    overflow: hidden;
+    width: 73px;
+    height: 98px;
+    position: relative;
+    display: inline-block;
+}
+.card-img img {
+    position: absolute;
+}
+
+#vira {
+    position: absolute;
+    left:50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+}
+
+.vision {
+        margin-top: -775px;
+    border-bottom: 800px solid rgba(0,0,0,0.2);
+    border-left: 70px solid transparent;
+    border-right: 70px solid transparent;
+    height: 0;
+    width: 28px;
+    transform: rotateX(180deg);
+    margin-left: -84px;
+    z-index: 2;
+    pointer-events: none;
 }

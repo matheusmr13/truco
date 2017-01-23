@@ -9,6 +9,11 @@ var Truco = function() {
 var myName;
 var myTeam;
 var eventsSet = false;
+
+
+var cardTypes = ['1','2','3','4','5','6','7','Q','J','K'];
+var suite = ['C','H','S','D'];
+
 Truco.prototype = {
     init: function() {
         var that = this;
@@ -20,6 +25,16 @@ Truco.prototype = {
         });
         this.socket.on('nickExisted', function() {
             document.getElementById('info').textContent = '!nickname is taken, choose another pls';
+        });
+        this.socket.on('match-started', function(cards) {
+            cards = JSON.parse(cards);
+
+            document.getElementById('vira').innerHTML = that.getCard(cards.vira.card, cards.vira.suite);
+            var hand = document.querySelector('.me .hand');
+            hand.innerHTML = '';
+            for (var i = 0 ; i < cards.hand.length; i++) {
+                hand.innerHTML += that.getCard(cards.hand[i].card, cards.hand[i].suite);
+            }
         });
         this.socket.on('player-joined-room', function(response) {
             response = JSON.parse(response);
@@ -34,14 +49,17 @@ Truco.prototype = {
             for (var i =0 ; i < users.length;i++) {
                 players.innerHTML += that.getPlayer(users[i].username, users[i].team, i);
             }
+            document.getElementById(myName).classList.add('me');
             if (!eventsSet) {
                 window.addEventListener('mousemove', function(e) {
-                    var p1 = document.getElementById(myName);
-                    var p1MiddleY = p1.offsetTop + (p1.offsetHeight / 2);
-                    var p1MiddleX = p1.offsetLeft + (p1.offsetWidth / 2);
+                    var playerContainer = document.getElementById(myName);
+                    var p1 = playerContainer.getElementsByClassName('player-icon')[0];
+                    var p1MiddleY = playerContainer.offsetTop - p1.offsetHeight - 20;// + p1.offsetTop + (p1.offsetHeight / 2);
+                    var p1MiddleX = playerContainer.offsetLeft;// + p1.offsetLeft + (playerContainer.offsetWidth /2 );
 
                     var newX = e.pageX - p1MiddleX;
                     var newY = p1MiddleY - e.pageY;
+
                     var angle = Math.atan2(newX, newY) * 180 / Math.PI;
                     if (angle < 0){
                         angle = angle + 360;
@@ -74,25 +92,41 @@ Truco.prototype = {
                 that.socket.emit('login', nickName, match);
             }
         }, false);
+        document.getElementById('start').addEventListener('click', function() {
+            that.socket.emit('start');
+        }, false);
+    },
+    getCard : function(cardType, suite) {
+        return '<div class="card-img"><img src="/imgs/cards.png" style="left: -' + (cardType * 73) + 'px; top: -' + (suite * 98) + 'px;"></div>';
     },
     getPlayer : function(id, team, i) {
         var config = {
             '1': [{
-                position : 'top: calc(50% - 200px)',
+                position : 'top: calc(50% - 300px)',
                 color:'red'
             }, {
-                position : 'top: calc(50% + 200px)',
+                position : 'top: calc(50% + 300px)',
                 color:'blue'
             }],
             '2': [{
-                position : 'left: calc(50% - 200px)',
+                position : 'left: calc(50% - 300px)',
                 color:'green'
             }, {
-                position : 'left: calc(50% + 200px)',
+                position : 'left: calc(50% + 300px)',
                 color:'yellow'
             }]
         }[team][Math.floor(i / 2)];
         console.info(id, team, i);
-        return '<div id="'+id+'" class="player" style="'+config.position+';"><div class="player-icon" style="border-bottom: 50px solid '+config.color+';"></div><div class="player-name">'+id+'</div></div>';
+        return '<div id="'+id+'" class="player" style="'+config.position+';">'+
+                    '<div class="player-icon" style="border-bottom: 50px solid '+config.color+';"></div>'+
+                    '<div class="player-name">'+id+'</div>'+
+                    '<div class="player-cards">'+
+                        '<img src="/imgs/card-back.jpg">'+
+                        '<img src="/imgs/card-back.jpg">'+
+                        '<img src="/imgs/card-back.jpg">'+
+                        '<div class="hand">'+
+                        '</div>'+
+                    '</div>'+
+                '</div>';
     }
 };

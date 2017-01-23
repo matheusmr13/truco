@@ -9,10 +9,67 @@ server.listen(process.env.PORT || 3000);
 var index = 0;
 var matches = {};
 
+var cardTypes = ['1','2','3','4','5','6','7','Q','J','K'];
+var suite = ['C','H','S','D'];
+
+var setupMatch = function(socket) {
+    match = {};
+    match.users = {};
+    match.loggedUsers = 1;
+    match.users[socket.username] = {
+        socket: socket,
+        loggedDate: new Date(),
+        team: 2,
+        order: 0
+    };
+    
+    matches[socket.matchCode] = match;
+};
+
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex;
+  while (0 !== currentIndex) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+var setupDeck = function(match) {
+    match.deck = [];
+    for (var i = 0; i < cardTypes.length;i++) {
+        for (var j = 0; j < suite.length;j++) {
+            match.deck.push({
+                card: i,
+                suite: j
+            });
+        }
+    }
+    match.deck = shuffle(match.deck);
+}
+
+var prepareListOfUsers = function(users) {
+    var usersToEmit = [];
+    for (let user in users) {
+        usersToEmit.push({
+            username: user,
+            team: users[user].team,
+            order: users[user].order
+        })
+    }
+    return usersToEmit;
+};
+
 io.sockets.on('connection', function(socket) {
     socket.on('login', function(username, matchCode) {
         if (!username || !matchCode) {
             socket.emit('error');
+            return;
         }
         if (matches[matchCode]) {
             let match = matches[matchCode];
@@ -35,16 +92,10 @@ io.sockets.on('connection', function(socket) {
                         team: teamNumber,
                         order: match.loggedUsers
                     };
-                    for (let user in match.users) {
-                        usersToEmit.push({
-                            username: user,
-                            team: match.users[user].team,
-                            order: match.users[user].order
-                        })
-                    }
+                    
                     for (let user in match.users) {
                         match.users[user].socket.emit('player-joined-room', JSON.stringify({
-                            users: usersToEmit
+                            users: prepareListOfUsers(match.users)
                         }));
                     }
                 }
@@ -52,21 +103,9 @@ io.sockets.on('connection', function(socket) {
         } else {
             socket.username = username;
             socket.matchCode = matchCode;
-            matches[matchCode] = {};
-            matches[matchCode].users = {};
-            matches[matchCode].loggedUsers = 1;
-            matches[matchCode].users[username] = {
-                socket: socket,
-                loggedDate: new Date(),
-                team: 2,
-                order: 0
-            };
+            setupMatch(socket);
             socket.emit('player-joined-room', JSON.stringify({
-                users: [{
-                    username: username,
-                    team: 2,
-                    order: 0
-                }]
+                users: prepareListOfUsers(match.users)
             }));
         }
     });
@@ -77,11 +116,30 @@ io.sockets.on('connection', function(socket) {
             match.users[user].socket.emit('player-exit-room', socket.username)
         }
     });
+    socket.on('start', function() {
+        var match = matches[socket.matchCode];
+        if (match) {
+            match.points = {};
+            match.points['1'] = 0;
+            match.points['2'] = 0;
+            setupDeck(match);
+            var vira = match.deck.shift();
+            for (let user in match.users) {
+                var cards = {
+                    vira: vira,
+                    hand: [match.deck.shift(),match.deck.shift(),match.deck.shift()]   
+                };
+                match.users[user].socket.emit('match-started', JSON.stringify(cards));
+            }
+        }
+    });
     socket.on('move', function(msg) {
         var match = matches[socket.matchCode];
-        for (let user in match.users) {
-            if (user != socket.username) {
-                match.users[user].socket.emit('move', socket.username, msg);
+        if (match) {
+            for (let user in match.users) {
+                if (user != socket.username) {
+                    match.users[user].socket.emit('move', socket.username, msg);
+                }
             }
         }
     });
