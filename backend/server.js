@@ -20,7 +20,8 @@ var setupMatch = function(socket) {
         socket: socket,
         loggedDate: new Date(),
         team: 2,
-        order: 0
+        order: 0,
+        signal: []
     };
 
     matches[socket.matchCode] = match;
@@ -90,7 +91,8 @@ io.sockets.on('connection', function(socket) {
                         socket: socket,
                         loggedDate: new Date(),
                         team: teamNumber,
-                        order: match.loggedUsers
+                        order: match.loggedUsers,
+                        signal: []
                     };
                     
                     for (let user in match.users) {
